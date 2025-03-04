@@ -1,14 +1,14 @@
 from flask import Flask, request, jsonify, send_from_directory
 from flask_cors import CORS
 import requests
+import os
 from datetime import datetime
 
 app = Flask(__name__)
 CORS(app)
 
-# Your API key for the demo (password-protected)
-xai_api_url = "https://api.x.ai/v1/chat/completions"
-xai_api_key = "Bearer xai-CJp6tguM7MX5W1d3HGNgg5fCqJih7GAatUZJfoIMrla36KDjZzZL6hcO0iGFV71x8b5w3vdflrGzsPC1"  # Your key
+# Get xAI API key from environment variable (set on Render) or use a default (for local testing)
+xai_api_key = os.environ.get('XAI_API_KEY', 'Bearer xai-CJp6tguM7MX5W1d3HGNgg5fCqJih7GAatUZJfoIMrla36KDjZzZL6hcO0iGFV71x8b5w3vdflrGzsPC1')
 demo_password = "secret123"  # Keep this for login
 
 # Dynamic system prompt based on store type (no coffee shop references)
@@ -66,4 +66,4 @@ def chat():
     return jsonify({"reply": reply})
 
 if __name__ == '__main__':
-    app.run(debug=True, port=5000)
+    app.run(host='0.0.0.0', port=int(os.environ.get('PORT', 8080)), debug=True)
