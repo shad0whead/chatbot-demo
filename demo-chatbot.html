@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SmartBiz AI Assistant</title>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;700&display=swap">
+    <style>
+        body { background: #2d2d2d; color: white; font-family: 'Poppins', sans-serif; margin: 0; padding: 20px; }
+        h1 { text-align: center; color: #808080; text-shadow: 0 2px 6px rgba(128, 128, 128, 0.5); }
+        .chat-box { position: fixed; bottom: 20px; right: 20px; width: 350px; padding: 20px; background: #444; border-radius: 10px; transition: all 0.3s ease; box-shadow: 0 4px 10px rgba(0, 0, 0, 0.5); }
+        .chat-box.minimized { width: 30px; height: 30px; padding: 0; overflow: hidden; display: flex; align-items: center; justify-content: center; }
+        .chat-box.minimized > *:not(.toggle-button) { display: none; }
+        .toggle-button { position: absolute; bottom: 5px; right: 5px; width: 25px; height: 25px; background: #000000; color: #ffffff; font-size: 18px; border: none; cursor: pointer; border-radius: 50%; display: flex; align-items: center; justify-content: center; }
+        .chat-box.minimized .toggle-button { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 30px; height: 30px; font-size: 24px; background: #000000; color: #ffffff; }
+        .chat-box p.call-to-action { margin-top: 5px; font-size: 14px; color: #808080; opacity: 1; transition: opacity 0.5s; }
+        .chat-box p.call-to-action.hide { opacity: 0; }
+        #loginInput, #chatInput { width: 70%; padding: 8px; border: 1px solid #444; border-radius: 8px; font-family: 'Poppins', sans-serif; background: #3d3d3d; color: white; transition: border-color 0.3s; }
+        #loginInput:focus, #chatInput:focus { border-color: #000000; outline: none; }
+        .arrow-button, .loading-dots { width: 40px; height: 40px; background: #3d3d3d; color: #000000; border: none; border-radius: 8px; cursor: pointer; font-family: 'Poppins', sans-serif; display: flex; align-items: center; justify-content: center; transition: transform 0.2s, background 0.3s; margin-left: 10px; padding: 5px; }
+        .arrow-button:hover { transform: scale(1.1); background: #444; }
+        .arrow-button::after { content: '↑'; font-size: 24px; line-height: 1; position: relative; top: -2px; }
+        .loading-dots { display: none; }
+        .loading-dots::after { content: '...'; font-size: 24px; }
+        #loginReply, #chatReply { margin-top: 15px; color: #fff; font-weight: 500; }
+    </style>
+</head>
+<body>
+    <h1>SmartBiz AI Assistant</h1>
+    <div id="loginBox" class="chat-box">
+        <p class="call-to-action">Try our demo—ask hours/products!</p>
+        <div style="display: flex; align-items: center; gap: 10px;">
+            <input id="loginInput" type="password" placeholder="Enter password...">
+            <div class="arrow-button" id="loginArrow" style="display: none;"></div> <!-- Hidden by default, shows after login -->
+            <div id="loginDots" class="loading-dots"></div>
+        </div>
+        <button class="toggle-button" id="loginMinimize">-</button>
+        <p id="loginReply"></p>
+    </div>
+    <div id="chatBox" class="chat-box" style="display: none;">
+        <p class="call-to-action">Demo—ask hours/products!</p>
+        <p id="chatReply"></p>
+        <div style="display: flex; align-items: center; gap: 10px;">
+            <input id="chatInput" type="search" placeholder="Ask me anything..." autocomplete="off">
+            <div class="arrow-button" id="chatArrow"></div>
+            <div id="chatDots" class="loading-dots"></div>
+        </div>
+        <button class="toggle-button" id="chatMinimize">-</button>
+    </script>
+    <script>
+        let isLoggedIn = false;
+        let storeType = 'SmartBiz'; // Default store type for the demo
+
+        window.addEventListener('load', () => {
+            const loginBox = document.getElementById('loginBox');
+            const chatBox = document.getElementById('chatBox');
+            const loginInput = document.getElementById('loginInput');
+            const chatInput = document.getElementById('chatInput');
+            const loginArrow = document.getElementById('loginArrow');
+            const chatArrow = document.getElementById('chatArrow');
+            const loginDots = document.getElementById('loginDots');
+            const chatDots = document.getElementById('chatDots');
+            const loginReply = document.getElementById('loginReply');
+            const chatReply = document.getElementById('chatReply');
+            const loginMinimize = document.getElementById('loginMinimize');
+            const chatMinimize = document.getElementById('chatMinimize');
+
+            function login() {
+                loginArrow.style.display = 'none';
+                loginDots.style.display = 'flex';
+                const password = loginInput.value;
+                // Local check for password "1337" instead of fetch
+                loginDots.style.display = 'none';
+                if (password.length === 4 && !isNaN(password)) { // Check if exactly 4 digits
+                    loginArrow.style.display = 'flex'; // Show arrow temporarily for feedback
+                    setTimeout(() => {
+                        if (password === '1337') {
+                            isLoggedIn = true;
+                            loginBox.style.display = 'none';
+                            chatBox.style.display = 'block';
+                            loginReply.textContent = 'Logged in!';
+                            loginBox.querySelector('.call-to-action')?.classList.add('hide');
+                        } else {
+                            loginReply.textContent = 'Invalid password';
+                        }
+                        loginArrow.style.display = 'none'; // Hide arrow after login attempt
+                    }, 100); // Brief delay to simulate login
+                } else {
+                    loginDots.style.display = 'none';
+                    loginArrow.style.display = 'none'; // Ensure arrow stays hidden if not 4 digits
+                    loginReply.textContent = 'Please enter a 4-digit password';
+                }
+            }
+
+            loginInput.addEventListener('input', (e) => {
+                const password = loginInput.value;
+                if (password.length === 4 && !isNaN(password)) {
+                    login(); // Automatically trigger login when 4 digits are entered
+                }
+            });
+
+            loginInput.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') {
+                    login();
+                }
+            });
+
+            loginArrow.addEventListener('click', login);
+
+            function sendMessage() {
+                if (!isLoggedIn) {
+                    alert('Please log in first!');
+                    return;
+                }
+                const msg = chatInput.value.trim().toLowerCase();
+                if (!msg) return;
+                chatArrow.style.display = 'none';
+                chatDots.style.display = 'flex';
+
+                // Detect product type and set store type for the demo (no coffee shop references)
+                if (msg.includes('headphones') || msg.includes('electronics') || msg.includes('phone') || msg.includes('tv') || msg.includes('gadget')) {
+                    storeType = 'TechTrend Electronics'; // Pretend to be an electronics store
+                } else if (msg.includes('tires') || msg.includes('car') || msg.includes('auto') || msg.includes('vehicle')) {
+                    storeType = 'AutoGear Online'; // Pretend to be an automotive online retailer
+                } else if (msg.includes('clothes') || msg.includes('clothing') || msg.includes('shirt') || msg.includes('dress')) {
+                    storeType = 'StyleHub Clothing'; // Pretend to be a clothing store
+                } else if (msg.includes('furniture') || msg.includes('couch') || msg.includes('table') || msg.includes('chair')) {
+                    storeType = 'HomeHaven Furniture'; // Pretend to be a furniture store
+                } else {
+                    storeType = 'SmartBiz'; // Default store if no product type detected
+                }
+
+                // Send message to /chat with the store type as context
+                fetch('/chat', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json', 'Authorization': 'Bearer secret123'},
+                    body: JSON.stringify({message: msg, storeType: storeType}) // Add storeType to the request
+                })
+                .then(res => res.json())
+                .then(data => {
+                    chatDots.style.display = 'none';
+                    chatArrow.style.display = 'flex';
+                    if (data.error) {
+                        chatReply.textContent = data.error;
+                    } else {
+                        chatReply.textContent = data.reply;
+                        chatInput.value = ''; // Clear input
+                        chatBox.querySelector('.call-to-action')?.classList.add('hide');
+                    }
+                });
+            }
+
+            chatInput.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') sendMessage();
+            });
+
+            chatArrow.addEventListener('click', sendMessage);
+
+            function toggleBox(box) {
+                box.classList.toggle('minimized');
+                const button = box.querySelector('.toggle-button');
+                button.textContent = box.classList.contains('minimized') ? '+' : '-';
+            }
+
+            loginMinimize.addEventListener('click', () => toggleBox(loginBox));
+            chatMinimize.addEventListener('click', () => toggleBox(chatBox));
+
+            // Hide chatBox initially
+            chatBox.style.display = 'none';
+        });
+    </script>
+</body>
+</html>
